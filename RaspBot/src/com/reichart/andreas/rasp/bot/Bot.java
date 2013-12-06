@@ -29,14 +29,20 @@ public class Bot {
 	// }
 	while (true) {
 
-	    for (int i = 0; i < 255; i++) {
+	    for (int i = 0; i < 0xFE; i++) {
 		device.write(0x00, (byte) i);
+		synchronized(this) {
+		    this.wait(1);
+		}
 	    }
-	    for (int i = 254; i < 1; i--) {
+	    for (int i = 254; i >= 0; i--) {
 		device.write(0x00, (byte) i);
+		synchronized(this) {
+		    this.wait(1);
+		}
 	    }
 	    synchronized (this) {
-		this.wait(100);
+		this.wait(500);
 	    }
 	}
 	
