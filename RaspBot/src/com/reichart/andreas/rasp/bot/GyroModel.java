@@ -247,6 +247,22 @@ public class GyroModel {
 	}
 	return gMap;
     }
+    
+    /**
+     * Get a consistent Map of the acceleration values from the last poll of the acceleration
+     * module.
+     * 
+     * @return Map of consistent data from the last poll.
+     */
+    public Map<GyroAxes, Integer> getAccelValueList() {
+	Map<GyroAxes, Integer> aMap = new HashMap<GyroAxes, Integer>(3);
+	synchronized (accelBuffer) {
+	    aMap.put(GyroAxes.GYRO_X, getAX());
+	    aMap.put(GyroAxes.GYRO_Y, getAY());
+	    aMap.put(GyroAxes.GYRO_Z, getAZ());
+	}
+	return aMap;
+    }
 
     private int getGX() {
 	return ((int) gyroBuffer[0] << 8) + (int) gyroBuffer[1];
