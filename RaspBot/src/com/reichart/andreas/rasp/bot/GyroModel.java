@@ -159,6 +159,48 @@ public class GyroModel {
     }
 
     /**
+     * Get the value of the last gyro-poll for accelerations on the X-axis
+     * <p>
+     * NOTE: when getting the data from another axis afterwards it cannot be assumed, that both data
+     * are consistent.
+     * 
+     * @return integer value for the X-axis
+     */
+    public int getAccelX() {
+	synchronized (accelBuffer) {
+	    return getAX();
+	}
+    }
+
+    /**
+     * Get the value of the last gyro-poll for accelerations on the Y-axis
+     * <p>
+     * NOTE: when getting the data from another axis afterwards it cannot be assumed, that both data
+     * are consistent.
+     * 
+     * @return integer value for the YS-axis
+     */
+    public int getAccelY() {
+	synchronized (accelBuffer) {
+	    return getAY();
+	}
+    }
+
+    /**
+     * Get the value of the last gyro-poll for accelerations on the Z-axis
+     * <p>
+     * NOTE: when getting the data from another axis afterwards it cannot be assumed, that both data
+     * are consistent.
+     * 
+     * @return integer value for the Z-axis
+     */
+    public int getAccelZ() {
+	synchronized (accelBuffer) {
+	    return getAZ();
+	}
+    }
+
+    /**
      * Get a consistent set of gyro bytes.
      * 
      * @return byte array with consistent data
@@ -166,6 +208,17 @@ public class GyroModel {
     public byte[] getGyroBytes() {
 	synchronized (gyroBuffer) {
 	    return gyroBuffer;
+	}
+    }
+    
+    /**
+     * Get a consistent set of the acceleration bytes.
+     * 
+     * @return byte array with consistent data of the acceleration buffer
+     */
+    public byte[] getAccelBytes() {
+	synchronized (accelBuffer) {
+	    return accelBuffer;
 	}
     }
 
