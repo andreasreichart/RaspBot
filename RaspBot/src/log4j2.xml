@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration
+	status="warn"
+	strict="true"
+	name="botlog"
+	packages="org.reichart.andreas.log4j.logger">
+	<properties>
+		<property name="filename">bot.log</property>
+	</properties>
+	<appenders>
+		<appender
+			type="Console"
+			name="stdout">
+			<layout
+				type="PatternLayout"
+				pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{1} - %msg%n" />
+		</appender>
+		<appender
+			type="File"
+			name="file"
+			filename="${filename}">
+			<layout
+				type="PatternLayout"
+				pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{1} - %m %ex%n" />
+		</appender>
+	</appenders>
+	<loggers>
+		<logger
+			name="org.reichart.andreas.log4j.consolelogger"
+			level="debug"
+			additivity="true">
+			<appender-ref ref="file" />
+		</logger>
+		<logger
+			name="org.reichart.andreas.log4j.filelogger"
+			level="info"
+			additivity="true">
+			<appender-ref ref="stdout" />
+		</logger>
+		<root level="debug">
+			<appender-ref ref="file" />
+			<appender-ref ref="stdout" />
+		</root>
+	</loggers>
+</configuration>
