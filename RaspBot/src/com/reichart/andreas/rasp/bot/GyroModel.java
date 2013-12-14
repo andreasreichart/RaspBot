@@ -195,4 +195,20 @@ public class GyroModel {
     private int getGZ() {
 	return ((int) gyroBuffer[4] << 8) + (int) gyroBuffer[5];
     }
+
+    private int getAX() {
+	return ((int) accelBuffer[0] << 8) + (int) accelBuffer[1];
+    }
+
+    private int getAY() {
+	return ((int) accelBuffer[2] << 8) + (int) accelBuffer[3];
+    }
+
+    private int getAZ() {
+	return ((int) accelBuffer[4] << 8) + (int) accelBuffer[5];
+    }
+
+    private int getTemp() {
+	return ((int) tempBuffer[0] << 8) + (int) tempBuffer[1];
+    }
 }
