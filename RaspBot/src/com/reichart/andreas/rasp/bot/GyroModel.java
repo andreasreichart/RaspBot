@@ -199,6 +199,17 @@ public class GyroModel {
 	    return getAZ();
 	}
     }
+    
+    /**
+     * Get the value for the last temperature poll.
+     * 
+     * @return integer representation of the temperature poll
+     */
+    public int getTemperature() {
+	synchronized (tempBuffer) {
+	    return getTemp();
+	}
+    }
 
     /**
      * Get a consistent set of gyro bytes.
