@@ -12,7 +12,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.pi4j.io.i2c.I2CDevice;
-import com.sun.corba.se.impl.ior.ByteBuffer;
 
 public class GyroModel {
 
@@ -26,6 +25,8 @@ public class GyroModel {
     private final static int ACCEL_START_ADDRESS = 0x3B;
     /** Start addres of the temperature sensor */
     private final static int TEMP_START_ADDRESS = 0x41;
+    
+    private final static float complementary = 0.98f; 
 	    
 
     /* The logger for this class */
@@ -410,6 +411,27 @@ public class GyroModel {
 		timestamps.put(axis, (Long) tempTime);
 	    }
         }
+    }
+    
+    public Map <GyroAxes, Double> getCompensatedAngles() {
+	double accelXAngle = 57.295 * Math.atan((float) getAX()
+		/ Math.sqrt(Math.pow((float) getAZ(), 2) + Math.pow((float) getAX(), 2)));
+	double accelYAngle = 57.295 * Math.atan((float) getAX()
+		/ Math.sqrt(Math.pow((float) getAY(), 2) + Math.pow((float) getAY(), 2)));
+	
+	if (accelXAngle > 180) {
+	    accelXAngle -= (float) 360.0;
+	}
+	if (accelYAngle > 180)
+	    accelYAngle -= (float) 360.0;
+	
+	//TODO: add the ZAxis after verification that this works.
+	double combinedXAngle = complementary * angles.get(GyroAxes.GYRO_X) + (1 - complementary) * accelXAngle;
+	double combinedYAngle = complementary * angles.get(GyroAxes.GYRO_Y) + (1 - complementary) * accelYAngle;
+	Map<GyroAxes, Double> map = new HashMap<>(3);
+	map.put(GyroAxes.GYRO_X, combinedXAngle);
+	map.put(GyroAxes.GYRO_Y, combinedYAngle);
+	return map;
     }
 
     private int getGX() {

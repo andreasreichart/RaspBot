@@ -34,6 +34,7 @@ public class Bot {
 
 //	    logGyroValues(model);
 	    logGyroAngles(model);
+	    logCompensatedAngles(model);
 	    synchronized (this) {
 		this.wait(5);
 	    }
@@ -70,7 +71,19 @@ public class Bot {
 	for (Map.Entry<GyroAxes, Integer> entry : angles.entrySet()) {
 	    builder.append ("  ");
 	    builder.append (entry.getKey() + ":");
-	    builder.append(entry.getValue() /256 );
+	    builder.append((float)entry.getValue() /256f );
+	}
+	log.debug(builder.toString());
+    }
+    
+    private void logCompensatedAngles(GyroModel model) {
+	StringBuilder builder = new StringBuilder();
+	Map<GyroAxes, Double> map = model.getCompensatedAngles();
+	builder.append("Compensated angles: ");
+	for (Map.Entry<GyroAxes, Double> entry : map.entrySet()) {
+	    builder.append("  ");
+	    builder.append(entry.getKey() + ":");
+	    builder.append(entry.getValue() / 256f);
 	}
 	log.debug(builder.toString());
     }
