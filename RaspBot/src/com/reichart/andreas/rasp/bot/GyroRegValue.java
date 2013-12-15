@@ -45,7 +45,36 @@ public enum GyroRegValue {
     /** If 1: Y-axis gyroscope to standby */
     PWR_MGMT_2_STBY_YG(1 << 1),
     /** If 1: Z-axis gyroscope to standby */
-    PWR_MGMT_2_STBY_ZG(1 << 0);
+    PWR_MGMT_2_STBY_ZG(1 << 0),
+    /** Self-test of gyro x-axis */
+    GYRO_CONFIG_XG_ST(1 << 7),
+    /** Self-test of gyro y-axis */
+    GYRO_CONFIG_YG_ST(1 << 6),
+    /** Self-test of gyro-z-axis */
+    GYRO_CONFIG_ZG_ST(1 << 6),
+    /**
+     * FS_SEL values:
+     * <p>
+     * <ul>
+     * <li>0 ... .+/- 250 °/s</li>
+     * <li>1 ... .+/- 500 °/s</li>
+     * <li>2 ... .+/-1000 °/s</li>
+     * <li>3 ... .+/-2000 °/s</li>
+     * </ul>
+     */
+    GYRO_CONFIG_FS_SEL4(1 << 4),
+    /**
+     * FS_SEL values:
+     * <p>
+     * <ul>
+     * <li>0 ... .+/- 250 °/s</li>
+     * <li>1 ... .+/- 500 °/s</li>
+     * <li>2 ... .+/-1000 °/s</li>
+     * <li>3 ... .+/-2000 °/s</li>
+     * </ul>
+     */
+    GYRO_CONFIG_FS_SEL3(1 << 4);
+    
 
     final int bit;
 

@@ -1,6 +1,7 @@
 package com.reichart.andreas.rasp.bot;
 
 import java.io.IOException;
+import java.util.Map;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -27,11 +28,14 @@ public class Bot {
 
 	GyroModel model = new GyroModel();
 
+	Map<GyroAxes, Integer> selfTestGyro = model.getSelfTestGyroResults();
+
 	while (true) {
 
-	    logGyroValues(model);
+//	    logGyroValues(model);
+	    logGyroAngles(model);
 	    synchronized (this) {
-		this.wait(300);
+		this.wait(5);
 	    }
 	}
     }
@@ -57,6 +61,18 @@ public class Bot {
 	builder.append(" Z: ");
 	builder.append(model.getGyroZ());
 	log.debug("Gyro-values: " + builder.toString());
+    }
+    
+    private void logGyroAngles(GyroModel model) {
+	StringBuilder builder = new StringBuilder();
+	Map<GyroAxes, Integer> angles = model.getAngles();
+	builder.append ("Current angles: ");
+	for (Map.Entry<GyroAxes, Integer> entry : angles.entrySet()) {
+	    builder.append ("  ");
+	    builder.append (entry.getKey() + ":");
+	    builder.append(entry.getValue() /256 );
+	}
+	log.debug(builder.toString());
     }
 
 }
