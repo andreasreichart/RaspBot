@@ -76,12 +76,24 @@ public class GyroModel {
      * @throws IOException 
      */
     private void initInertialSystem() throws IOException {
+	resetAllRegisters();
 	offsetMap = getOffsetMap();
 	for (GyroAxes axis : GyroAxes.values()) {
 	    initAngles(axis);
 	    initGyroMap(axis);
 	}
 
+    }
+    
+    /**
+     * Write a 0x00 into all registers of the device.
+     * 
+     * @throws IOException
+     */
+    private void resetAllRegisters() throws IOException {
+	for (GyroReg register : GyroReg.values()) {
+	    device.write(register.register, (byte) 0x00);
+	}
     }
     
     /**
@@ -358,7 +370,7 @@ public class GyroModel {
     
     /**
      * Get a map with the result of the selftest.
-     * @return
+     * @return Map containing self test results.
      * @throws IOException
      * @throws InterruptedException 
      */
@@ -470,7 +482,6 @@ public class GyroModel {
      * @return
      */
     private String getStringForLog(Map<?, ?> map) {
-	Map<?, ?> logMap = new HashMap<>(3);
 	StringBuilder builder = new StringBuilder();
 	for (Object anInt : map.values()) {
 	    builder.append("<");

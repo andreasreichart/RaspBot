@@ -15,6 +15,7 @@ public class Bot {
     private I2CDevice device;
     private final static int AVR_DEVICE = 0x37;
     private final static Logger log = LogManager.getLogger(Bot.class);
+    private final JFrameGyroDiagram visualizationFrame; 
 
     public static void main(String[] args) {
 	try {
@@ -29,12 +30,17 @@ public class Bot {
 	GyroModel model = new GyroModel();
 
 	Map<GyroAxes, Integer> selfTestGyro = model.getSelfTestGyroResults();
+	visualizationFrame = new JFrameGyroDiagram();
+	visualizationFrame.setVisible(true);
 
 	while (true) {
 
 //	    logGyroValues(model);
-	    logGyroAngles(model);
-	    logCompensatedAngles(model);
+//	    logGyroAngles(model);
+//	    logCompensatedAngles(model);
+	    Map<GyroAxes, Double> angleMap = model.getCompensatedAngles();
+//	    logCompensatedAngles(angleMap);
+	    visualizationFrame.addValues(angleMap);
 	    synchronized (this) {
 		this.wait(5);
 	    }
@@ -76,9 +82,8 @@ public class Bot {
 	log.debug(builder.toString());
     }
     
-    private void logCompensatedAngles(GyroModel model) {
+    private void logCompensatedAngles(Map<GyroAxes, Double> map) {
 	StringBuilder builder = new StringBuilder();
-	Map<GyroAxes, Double> map = model.getCompensatedAngles();
 	builder.append("Compensated angles: ");
 	for (Map.Entry<GyroAxes, Double> entry : map.entrySet()) {
 	    builder.append("  ");
@@ -86,6 +91,16 @@ public class Bot {
 	    builder.append(entry.getValue() / 256f);
 	}
 	log.debug(builder.toString());
+    }
+    
+    /**
+     * Get the compensated angles from the model
+     * @param model
+     * @return
+     */
+    private Map<GyroAxes, Double> getCompensatedAngles (GyroModel model) {
+	return model.getCompensatedAngles();
+	
     }
 
 }
