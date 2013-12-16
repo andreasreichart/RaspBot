@@ -15,8 +15,9 @@ import com.pi4j.io.i2c.I2CDevice;
 
 public class GyroModel {
 
-    /** The poll interval for the gyroscope */
-    private final static int POLL_INTERVAL = 2;
+    /** The poll interval in ms for the gyroscope */
+    private final static int POLL_INTERVAL = 5;
+    private final static float POLL_FACTOR = POLL_INTERVAL/1000;
     /** Bus-Address for the gyroscope */
     private final static int BUS_ADRESS = 0x68;
     /** Start address of the gyro registers on the device - refering to datasheet */
@@ -25,6 +26,8 @@ public class GyroModel {
     private final static int ACCEL_START_ADDRESS = 0x3B;
     /** Start addres of the temperature sensor */
     private final static int TEMP_START_ADDRESS = 0x41;
+    /** The sensitivity of the gyro sensor: <br>can be  <code> 131, 65.5, 32.8 or 16.4 °/LSB</code> */
+    private final static int GYRO_SENSITIVITY = 131;
     
     private final static float complementary = 0.98f; 
 	    
@@ -39,7 +42,8 @@ public class GyroModel {
     private static byte [] accelBuffer = new byte [6];
     private static byte [] tempBuffer = new byte [2];
     private static Map<GyroAxes, Long> timestamps = new HashMap<GyroAxes, Long>(3);
-    private static Map<GyroAxes, Integer> angles = new HashMap<GyroAxes, Integer>(3);
+    private static Map<GyroAxes, Float> angles = new HashMap<GyroAxes, Float>(3);
+    private static Map<GyroAxes, Float> filteredAngles = new HashMap<GyroAxes, Float>(3);
     private static Map<GyroAxes, Integer> gyroMap = new HashMap<GyroAxes, Integer>(3);
     private Map<GyroAxes, Integer> offsetMap = new HashMap<GyroAxes, Integer>(3);
 
@@ -48,8 +52,12 @@ public class GyroModel {
 	
 	log.info("Writing <"+GyroRegValue.PWR_MGMT_1_CYCLE.getValue()+"> to register <"+GyroRegister.PWR_MGMT_1.getValue()+">");
 	device.write(GyroRegister.PWR_MGMT_1.getValue(), (byte) 0x00);
-	device.write(GyroRegister.PWR_MGMT_1.getValue(), (byte) GyroRegValue.PWR_MGMT_1_CYCLE.getValue());
-	initInertialSystem();
+	device.write(GyroRegister.PWR_MGMT_1.getValue(), (byte) ((byte) GyroRegValue.PWR_MGMT_1_CYCLE.getValue()|(byte)GyroRegValue.PWR_MGMT_1_CLKSEL_1.getValue()));
+	try {
+	    initInertialSystem();
+	} catch (InterruptedException e) {
+	    	log.error("Cannot init inertialsystem", e);
+	}
 	initTimerTask();
 
     }
@@ -74,8 +82,9 @@ public class GyroModel {
     /**
      * Init the axes for the intertial system.
      * @throws IOException 
+     * @throws InterruptedException 
      */
-    private void initInertialSystem() throws IOException {
+    private void initInertialSystem() throws IOException, InterruptedException {
 	resetAllRegisters();
 	offsetMap = getOffsetMap();
 	for (GyroAxes axis : GyroAxes.values()) {
@@ -101,8 +110,9 @@ public class GyroModel {
      * 
      * @return Map of offsets.
      * @throws IOException
+     * @throws InterruptedException 
      */
-    private Map<GyroAxes, Integer> getOffsetMap() throws IOException {
+    private Map<GyroAxes, Integer> getOffsetMap() throws IOException, InterruptedException {
 	final long startTime = System.currentTimeMillis();
 	final int iterations = 1000;
 	int xAxis = 0;
@@ -113,6 +123,9 @@ public class GyroModel {
 	    xAxis += getGX();
 	    yAxis += getGY();
 	    zAxis += getGZ();
+	    synchronized(this) {
+		this.wait(1);
+	    }
 	}
 	Map<GyroAxes, Integer> offsetMap = new HashMap<>(3);
 	offsetMap.put(GyroAxes.GYRO_X, (Integer) (xAxis / iterations));
@@ -144,7 +157,7 @@ public class GyroModel {
      *            The axis to be added
      */
     private void initAngles(GyroAxes axis) {
-	angles.put(axis, 0);
+	angles.put(axis, 0f);
     }
 
     /**
@@ -154,11 +167,18 @@ public class GyroModel {
         gyroMap.put(axis, 0x00);
     }
 
-    private void pollData() throws IOException {
+    /**
+     * Poll and compute data.
+     * @throws IOException
+     */
+    private synchronized void pollData() throws IOException {
 	pollGyro();
 	pollAccel();
 	pollTemp();
+	updateGyroAngles();
+	filterAngles();
     }
+    
 
     /**
      * Poll all gyro-registers and put the received values into a byte buffer
@@ -167,7 +187,7 @@ public class GyroModel {
      */
     private void pollGyro() throws IOException {
 	synchronized (gyroBuffer) {
-	    device.write (GyroRegister.PWR_MGMT_1.register,  (byte)0x00);
+//	    device.write (GyroRegister.PWR_MGMT_1.register,  (byte)0x00);
 	    device.read(GYRO_START_ADDRESS, gyroBuffer, 0, 6);
 	}
     }
@@ -179,7 +199,7 @@ public class GyroModel {
      * @throws IOException
      */
     private byte getGyroByte(int address) throws IOException {
-	device.write(GyroRegister.PWR_MGMT_1.register, (byte) 0x00);
+//	device.write(GyroRegister.PWR_MGMT_1.register, (byte) 0x00);
 	byte[] buffer = new byte[1];
 	device.read(address, buffer, 0, 1);
 	return buffer[0];
@@ -192,7 +212,7 @@ public class GyroModel {
      */
     private void pollAccel() throws IOException {
 	synchronized (accelBuffer) {
-	    device.write(GyroRegister.PWR_MGMT_1.getValue(), (byte) 0x00);
+//	    device.write(GyroRegister.PWR_MGMT_1.getValue(), (byte) 0x00);
 	    device.read(ACCEL_START_ADDRESS, accelBuffer, 0, 6);
 	}
     }
@@ -204,7 +224,7 @@ public class GyroModel {
      */
     private void pollTemp() throws IOException {
 	synchronized (tempBuffer) {
-	    device.write(GyroRegister.PWR_MGMT_1.getValue(), (byte) 0x00);
+//	    device.write(GyroRegister.PWR_MGMT_1.getValue(), (byte) 0x00);
 	    device.read(TEMP_START_ADDRESS, tempBuffer, 0, 6);
 	}
     }
@@ -212,13 +232,11 @@ public class GyroModel {
     /**
      * Get a fresh map with the current angles of the gyroboard.
      * <p>
-     * NOTE: currently only values are exported that do not have a dimension!!!
      * 
      * @return Map with the angles of the gyroboard.
      */
-    public Map<GyroAxes, Integer> getAngles() {
-        updateAngles();
-        return angles;
+    public synchronized Map<GyroAxes, Float> getAngles() {
+        return filteredAngles;
     }
 
     /**
@@ -227,7 +245,7 @@ public class GyroModel {
      * 
      * @return Map of consistent data from the last poll.
      */
-    public Map<GyroAxes, Integer> getAccelValueList() {
+    private Map<GyroAxes, Integer> getAccelValueList() {
         Map<GyroAxes, Integer> aMap = new HashMap<GyroAxes, Integer>(3);
         synchronized (accelBuffer) {
             aMap.put(GyroAxes.GYRO_X, getAX());
@@ -238,17 +256,18 @@ public class GyroModel {
     }
 
     /**
-     * Get a consistent Map of the gyro values from the last poll of the gyroscope.
+     * Get a consistent Map of the gyro values from the last poll of the gyroscope that is already
+     * compensated with the offset.
      * 
      * @return Map of consistent data from the last poll.
      */
-    public Map<GyroAxes, Integer> getGyroValueList() {
-        synchronized (gyroBuffer) {
-            gyroMap.put(GyroAxes.GYRO_X, getGX());
-            gyroMap.put(GyroAxes.GYRO_Y, getGY());
-            gyroMap.put(GyroAxes.GYRO_Z, getGZ());
-        }
-        return gyroMap;
+    private Map<GyroAxes, Integer> getGyroValueList() {
+	synchronized (gyroBuffer) {
+	    gyroMap.put(GyroAxes.GYRO_X, getGX() - offsetMap.get(GyroAxes.GYRO_X));
+	    gyroMap.put(GyroAxes.GYRO_Y, getGY() - offsetMap.get(GyroAxes.GYRO_Y));
+	    gyroMap.put(GyroAxes.GYRO_Z, getGZ() - offsetMap.get(GyroAxes.GYRO_Z));
+	}
+	return gyroMap;
     }
 
     /**
@@ -405,6 +424,7 @@ public class GyroModel {
     /**
      * Update the angles.
      */
+    @Deprecated
     private void updateAngles() {
 	getGyroValueList(); /* Dont't need the variable here ... we use the field */
 	if (timestamps.size() == 0) {
@@ -413,67 +433,113 @@ public class GyroModel {
 	    }
 	}
 	long tempTime;
-	int tempInt;
+	float tempFloat;
 	synchronized (gyroBuffer) {
 	    for (GyroAxes axis : GyroAxes.values()) {
-		tempInt = (int) angles.get(axis);
-		tempInt += (gyroMap.get(axis) - offsetMap.get(axis))
-			* ((tempTime = System.nanoTime()) - timestamps.get(axis))/1000000000L;
-		angles.put(axis, (Integer) tempInt);
+		tempFloat = angles.get(axis);
+		tempFloat += (gyroMap.get(axis) - offsetMap.get(axis))
+			* ((tempTime = System.nanoTime()) - timestamps.get(axis))/(1000000000L*GYRO_SENSITIVITY);
+		angles.put(axis, tempFloat);
 		timestamps.put(axis, (Long) tempTime);
 	    }
         }
     }
     
+    /**
+     * Poll gyro and convert it directly into degrees
+     */
+    private void updateGyroAngles() {
+	getGyroValueList();
+	for (GyroAxes axis : GyroAxes.values()) {
+	    float gyroRate = (float) gyroMap.get(axis)/GYRO_SENSITIVITY;
+	    float gyroAngle = angles.get(axis);
+	    gyroAngle += gyroRate * POLL_FACTOR;
+	    angles.put(axis, gyroAngle);
+	}
+    }
+    
+    @Deprecated
     public Map <GyroAxes, Double> getCompensatedAngles() {
-	double accelXAngle = 57.295 * Math.atan((float) getAX()
+	double accelXAngle = 57.295f * Math.atan((float) getAX()
 		/ Math.sqrt(Math.pow((float) getAZ(), 2) + Math.pow((float) getAX(), 2)));
-	double accelYAngle = 57.295 * Math.atan((float) getAX()
+	double accelYAngle = 57.295f * Math.atan((float) getAX()
 		/ Math.sqrt(Math.pow((float) getAY(), 2) + Math.pow((float) getAY(), 2)));
 	
 	if (accelXAngle > 180) {
-	    accelXAngle -= (float) 360.0;
+	    accelXAngle -= (float) 360.0f;
 	}
 	if (accelYAngle > 180)
-	    accelYAngle -= (float) 360.0;
+	    accelYAngle -= (float) 360.0f;
+	
+	Map<GyroAxes, Float> angleMap = getAngles();
 	
 	//TODO: add the ZAxis after verification that this works.
-	double combinedXAngle = complementary * angles.get(GyroAxes.GYRO_X) + (1 - complementary) * accelXAngle;
-	double combinedYAngle = complementary * angles.get(GyroAxes.GYRO_Y) + (1 - complementary) * accelYAngle;
+	double combinedXAngle = complementary * angleMap.get(GyroAxes.GYRO_X) + (1 - complementary) * accelXAngle;
+	double combinedYAngle = complementary * angleMap.get(GyroAxes.GYRO_Y) + (1 - complementary) * accelYAngle;
 	Map<GyroAxes, Double> map = new HashMap<>(3);
 	map.put(GyroAxes.GYRO_X, combinedXAngle);
 	map.put(GyroAxes.GYRO_Y, combinedYAngle);
 	return map;
     }
+    
+    /**
+     * Use the complementary filter to get rid of the gyro drift. All filtered data are put into the
+     * filteredAngles map.
+     */
+    private void filterAngles() {
+	double accelXAngle = 57.295 * Math.atan((float) getAX()
+		/ Math.sqrt(Math.pow((float) getAZ(), 2) + Math.pow((float) getAX(), 2)));
+	double accelYAngle = 57.295 * Math.atan((float) getAX()
+		/ Math.sqrt(Math.pow((float) getAY(), 2) + Math.pow((float) getAY(), 2)));
+
+	if (accelXAngle > 180) {
+	    accelXAngle -= 360.0f;
+	}
+	if (accelYAngle > 180)
+	    accelYAngle -= 360.0f;
+
+	float combinedXAngle = (float) (complementary * angles.get(GyroAxes.GYRO_X) + (1 - complementary) * accelXAngle);
+	float combinedYAngle = (float) (complementary * angles.get(GyroAxes.GYRO_Y) + (1 - complementary) * accelYAngle);
+	filteredAngles.put(GyroAxes.GYRO_X, combinedXAngle);
+	filteredAngles.put(GyroAxes.GYRO_Y, combinedYAngle);
+    }
 
     private int getGX() {
-	return (int) (gyroBuffer[0] << 8 | gyroBuffer[1]);
+	return getIntFromHiLoByte(gyroBuffer, 0);
     }
 
     private int getGY() {
-	return (int) (gyroBuffer[2] << 8 | gyroBuffer[3]);
+	return getIntFromHiLoByte(gyroBuffer, 2);
     }
 
     private int getGZ() {
-	return (int) (gyroBuffer[4] << 8 | gyroBuffer[5]);
+	return getIntFromHiLoByte(gyroBuffer, 4);
     }
 
     private int getAX() {
-	return (int) (accelBuffer[0] << 8 | accelBuffer[1]);
+	return getIntFromHiLoByte(accelBuffer, 0);
     }
 
     private int getAY() {
-	return (int) (accelBuffer[2] << 8 | accelBuffer[3]);
+	return getIntFromHiLoByte(accelBuffer, 2);
     }
 
     private int getAZ() {
-	return (int) (accelBuffer[4] << 8) | accelBuffer[5];
+	return getIntFromHiLoByte(accelBuffer, 4);
     }
 
     private int getTemp() {
-	return ((int) tempBuffer[0] << 8) + (int) tempBuffer[1];
+	return getIntFromHiLoByte(tempBuffer, 0);
     }
-    
+
+    private static int getInt(byte hi, byte lo) {
+	return hi << 8 & 0xFF00 | lo & 0xFF;
+    }
+
+    private static int getIntFromHiLoByte(byte[] byteBuffer, int hiByte) {
+	return getInt(byteBuffer[hiByte], byteBuffer[++hiByte]);
+    }
+
     /**
      * Get a String for a log output.
      * 

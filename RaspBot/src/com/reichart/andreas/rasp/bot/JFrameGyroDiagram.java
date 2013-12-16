@@ -114,12 +114,12 @@ public class JFrameGyroDiagram extends JFrame {
      * 
      * @param angleMap
      */
-    void addValues(Map<GyroAxes, Double> angleMap) {
+    void addValues(Map<GyroAxes, Float> angleMap) {
 	setTextFieldsValues(angleMap);
     }
 
-    private void setTextFieldsValues(Map<GyroAxes, Double> angleMap) {
-	for (Map.Entry<GyroAxes, Double> entry : angleMap.entrySet()) {
+    private void setTextFieldsValues(Map<GyroAxes, Float> angleMap) {
+	for (Map.Entry<GyroAxes, Float> entry : angleMap.entrySet()) {
 	    textFields.get(entry.getKey()).setText(String.valueOf(entry.getValue()));
 	}
     }
