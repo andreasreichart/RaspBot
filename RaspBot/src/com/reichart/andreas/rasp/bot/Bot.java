@@ -93,15 +93,4 @@ public class Bot {
 	}
 	log.debug(builder.toString());
     }
-    
-    /**
-     * Get the compensated angles from the model
-     * @param model
-     * @return
-     */
-    private Map<GyroAxes, Double> getCompensatedAngles (GyroModel model) {
-	return model.getCompensatedAngles();
-	
-    }
-
 }

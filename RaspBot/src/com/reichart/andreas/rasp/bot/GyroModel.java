@@ -420,30 +420,6 @@ public class GyroModel {
 
 	return selfTestMap; 
     }
-
-    /**
-     * Update the angles.
-     */
-    @Deprecated
-    private void updateAngles() {
-	getGyroValueList(); /* Dont't need the variable here ... we use the field */
-	if (timestamps.size() == 0) {
-	    for (GyroAxes axis : GyroAxes.values()) {
-		initTimeStamps(axis);
-	    }
-	}
-	long tempTime;
-	float tempFloat;
-	synchronized (gyroBuffer) {
-	    for (GyroAxes axis : GyroAxes.values()) {
-		tempFloat = angles.get(axis);
-		tempFloat += (gyroMap.get(axis) - offsetMap.get(axis))
-			* ((tempTime = System.nanoTime()) - timestamps.get(axis))/(1000000000L*GYRO_SENSITIVITY);
-		angles.put(axis, tempFloat);
-		timestamps.put(axis, (Long) tempTime);
-	    }
-        }
-    }
     
     /**
      * Poll gyro and convert it directly into degrees
@@ -458,48 +434,27 @@ public class GyroModel {
 	}
     }
     
-    @Deprecated
-    public Map <GyroAxes, Double> getCompensatedAngles() {
-	double accelXAngle = 57.295f * Math.atan((float) getAX()
-		/ Math.sqrt(Math.pow((float) getAZ(), 2) + Math.pow((float) getAX(), 2)));
-	double accelYAngle = 57.295f * Math.atan((float) getAX()
-		/ Math.sqrt(Math.pow((float) getAY(), 2) + Math.pow((float) getAY(), 2)));
-	
-	if (accelXAngle > 180) {
-	    accelXAngle -= (float) 360.0f;
-	}
-	if (accelYAngle > 180)
-	    accelYAngle -= (float) 360.0f;
-	
-	Map<GyroAxes, Float> angleMap = getAngles();
-	
-	//TODO: add the ZAxis after verification that this works.
-	double combinedXAngle = complementary * angleMap.get(GyroAxes.GYRO_X) + (1 - complementary) * accelXAngle;
-	double combinedYAngle = complementary * angleMap.get(GyroAxes.GYRO_Y) + (1 - complementary) * accelYAngle;
-	Map<GyroAxes, Double> map = new HashMap<>(3);
-	map.put(GyroAxes.GYRO_X, combinedXAngle);
-	map.put(GyroAxes.GYRO_Y, combinedYAngle);
-	return map;
-    }
-    
     /**
      * Use the complementary filter to get rid of the gyro drift. All filtered data are put into the
      * filteredAngles map.
      */
     private void filterAngles() {
-	double accelXAngle = 57.295 * Math.atan((float) getAX()
-		/ Math.sqrt(Math.pow((float) getAZ(), 2) + Math.pow((float) getAX(), 2)));
-	double accelYAngle = 57.295 * Math.atan((float) getAX()
-		/ Math.sqrt(Math.pow((float) getAY(), 2) + Math.pow((float) getAY(), 2)));
+//	double accelXAngle = 57.295 * Math.atan((float) getAX()
+//		/ Math.sqrt(Math.pow((float) getAY(), 2) + Math.pow((float) getAZ(), 2)));
+//	double accelYAngle = 57.295 * Math.atan((float) getAY()
+//		/ Math.sqrt(Math.pow((float) getAX(), 2) + Math.pow((float) getAZ(), 2)));
+	
+	float accelXAngle2 = (float) Math.toDegrees(Math.atan2((float) getAY(), (float) getAZ() + Math.PI));
+	float accelYAngle2 = (float) Math.toDegrees(Math.atan2((float) getAX(), (float) getAZ() + Math.PI));
 
-	if (accelXAngle > 180) {
-	    accelXAngle -= 360.0f;
-	}
-	if (accelYAngle > 180)
-	    accelYAngle -= 360.0f;
+//	if (accelXAngle > 180) {
+//	    accelXAngle -= 360.0f;
+//	}
+//	if (accelYAngle > 180)
+//	    accelYAngle -= 360.0f;
 
-	float combinedXAngle = (float) (complementary * angles.get(GyroAxes.GYRO_X) + (1 - complementary) * accelXAngle);
-	float combinedYAngle = (float) (complementary * angles.get(GyroAxes.GYRO_Y) + (1 - complementary) * accelYAngle);
+	float combinedXAngle = (float) (complementary * angles.get(GyroAxes.GYRO_X) + (1 - complementary) * accelXAngle2);
+	float combinedYAngle = (float) (complementary * angles.get(GyroAxes.GYRO_Y) + (1 - complementary) * accelYAngle2);
 	filteredAngles.put(GyroAxes.GYRO_X, combinedXAngle);
 	filteredAngles.put(GyroAxes.GYRO_Y, combinedYAngle);
     }
