@@ -2,6 +2,7 @@ package com.reichart.andreas.rasp.bot;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -30,20 +31,25 @@ public class Bot {
 	GyroModel model = new GyroModel();
 
 	Map<GyroAxes, Integer> selfTestGyro = model.getSelfTestGyroResults();
-	visualizationFrame = new JFrameGyroDiagram();
-	visualizationFrame.setVisible(true);
+//	visualizationFrame = new JFrameGyroDiagram();
+//	visualizationFrame.setVisible(true);
 
 	while (true) {
 
-//	    logGyroValues(model);
-//	    logGyroAngles(model);
-//	    logCompensatedAngles(model);
-//	    Map<GyroAxes, Double> angleMap = model.getCompensatedAngles();
-//	    logCompensatedAngles(angleMap);
-	    Map<GyroAxes, Float> angleMap = model.getAngles();
-	    visualizationFrame.addValues(angleMap);
+	    // logGyroValues(model);
+	    // logGyroAngles(model);
+	    // logCompensatedAngles(model);
+	    // Map<GyroAxes, Double> angleMap = model.getCompensatedAngles();
+	    // logCompensatedAngles(angleMap);
+	    for (int i = 0; i < 200; ++i) {
+		model.getOffsetMap();
+		Map<GyroAxes, Float> angleMap = model.getAngles();
+		logMap(angleMap);
+	    }
+
+	    // visualizationFrame.addValues(angleMap);
 	    synchronized (this) {
-		this.wait(5);
+		this.wait(21);
 	    }
 	}
     }
@@ -90,6 +96,17 @@ public class Bot {
 	    builder.append("  ");
 	    builder.append(entry.getKey() + ":");
 	    builder.append(entry.getValue() / 256f);
+	}
+	log.debug(builder.toString());
+    }
+
+    private void logMap(Map<GyroAxes, Float> map) {
+	StringBuilder builder = new StringBuilder();
+	builder.append("Current angles-map: ");
+	for (Entry<GyroAxes, Float> entry : map.entrySet()) {
+	    builder.append("  ");
+	    builder.append(entry.getKey() + ":");
+	    builder.append(entry.getValue());
 	}
 	log.debug(builder.toString());
     }

@@ -27,5 +27,11 @@
 			<attribute name="javadoc_location" value="jar:file:/home/reichart/Desktop/UsedLibraries/apache-log4j-2.0-beta8-bin/log4j-api-2.0-beta8-javadoc.jar!/"/>
 		</attributes>
 	</classpathentry>
+	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
+	<classpathentry kind="lib" path="/home/reichart/Desktop/UsedLibraries/easymock-3.2/easymock-3.2.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="jar:file:/home/reichart/Desktop/UsedLibraries/easymock-3.2/easymock-3.2-javadoc.jar!/"/>
+		</attributes>
+	</classpathentry>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>
