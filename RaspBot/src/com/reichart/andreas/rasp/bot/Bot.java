@@ -30,9 +30,8 @@ public class Bot {
 
 	GyroModel model = new GyroModel();
 
-	Map<GyroAxes, Integer> selfTestGyro = model.getSelfTestGyroResults();
-//	visualizationFrame = new JFrameGyroDiagram();
-//	visualizationFrame.setVisible(true);
+	visualizationFrame = new JFrameGyroDiagram();
+	visualizationFrame.setVisible(true);
 
 	while (true) {
 
@@ -41,15 +40,13 @@ public class Bot {
 	    // logCompensatedAngles(model);
 	    // Map<GyroAxes, Double> angleMap = model.getCompensatedAngles();
 	    // logCompensatedAngles(angleMap);
-	    for (int i = 0; i < 200; ++i) {
-		model.getOffsetMap();
-		Map<GyroAxes, Float> angleMap = model.getAngles();
-		logMap(angleMap);
-	    }
+	    
+	    Map<GyroAxes, Float> angleMap = model.getAngles();
+//	    logMap(angleMap);
 
-	    // visualizationFrame.addValues(angleMap);
+	     visualizationFrame.addValues(angleMap);
 	    synchronized (this) {
-		this.wait(21);
+		this.wait(500);
 	    }
 	}
     }
