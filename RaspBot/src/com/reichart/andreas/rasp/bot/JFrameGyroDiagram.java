@@ -1,6 +1,9 @@
 package com.reichart.andreas.rasp.bot;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
@@ -15,7 +18,7 @@ import javax.swing.border.EmptyBorder;
 
 public class JFrameGyroDiagram extends JFrame {
 
-    private JPanel contentPane;
+    private PanelGraphics graphicsPane;
     private JTextField textFieldXAxis;
     private JTextField textFieldYAxis;
     private JTextField textFieldZAxis;
@@ -42,16 +45,16 @@ public class JFrameGyroDiagram extends JFrame {
     private void initGUI() {
 	setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 	setBounds(100, 100, 651, 438);
-	contentPane = new JPanel();
-	contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
-	contentPane.setLayout(new BorderLayout(0, 0));
-	setContentPane(contentPane);
+	graphicsPane = new PanelGraphics();
+	graphicsPane.setBorder(new EmptyBorder(5, 5, 5, 5));
+	graphicsPane.setLayout(new BorderLayout(0, 0));
+	setContentPane(graphicsPane);
 
 	JPanel panelGraphics = new JPanel();
-	contentPane.add(panelGraphics, BorderLayout.CENTER);
+	graphicsPane.add(panelGraphics, BorderLayout.CENTER);
 
 	JPanel ValuePanel = new JPanel();
-	contentPane.add(ValuePanel, BorderLayout.SOUTH);
+	graphicsPane.add(ValuePanel, BorderLayout.SOUTH);
 	GridBagLayout gbl_ValuePanel = new GridBagLayout();
 	gbl_ValuePanel.columnWidths = new int[] { 0, 0, 0, 0, 0, 0, 0 };
 	gbl_ValuePanel.rowHeights = new int[] { 0, 0 };
@@ -116,11 +119,60 @@ public class JFrameGyroDiagram extends JFrame {
      */
     void addValues(Map<GyroAxes, Float> angleMap) {
 	setTextFieldsValues(angleMap);
+	graphicsPane.setData(angleMap);
     }
 
     private void setTextFieldsValues(Map<GyroAxes, Float> angleMap) {
 	for (Map.Entry<GyroAxes, Float> entry : angleMap.entrySet()) {
 	    textFields.get(entry.getKey()).setText(String.valueOf(entry.getValue()));
+	}
+    }
+
+    private class PanelGraphics extends JPanel {
+
+	private Map<GyroAxes, Float> map = new HashMap<>(3);
+	private final static int BAR_WIDTH = 60;
+	private Map<GyroAxes, Color> barColors = new HashMap<GyroAxes, Color>(3);
+
+	PanelGraphics() {
+	    barColors.put(GyroAxes.GYRO_X, Color.RED);
+	    barColors.put(GyroAxes.GYRO_Y, Color.GREEN);
+	    barColors.put(GyroAxes.GYRO_Z, Color.BLUE);
+	    setDoubleBuffered(true);
+	}
+
+	@Override
+	public void paint(Graphics g) {
+	    super.paint(g);
+
+	    Graphics2D g2 = (Graphics2D) g;
+
+	    int centerY = this.getHeight() / 2;
+	    int quartWidth = this.getWidth() / 4;
+	    int currentX = quartWidth;
+	    int barheight;
+
+	    for (Map.Entry<GyroAxes, Float> entry : map.entrySet()) {
+		g2.drawString(entry.getKey().toString(), currentX - BAR_WIDTH / 2, 10);
+		barheight = (int) (((float) centerY - 10f) * (entry.getValue() / 180f));
+		int barTop = (barheight > 0) ? centerY - barheight : centerY;
+		// int barBottom = (barheight > 0) ? centerY : barheight;
+		g2.setColor(barColors.get(entry.getKey()));
+		g2.fillRect(currentX, barTop, BAR_WIDTH / 2, Math.abs(barheight));
+		currentX += quartWidth;
+	    }
+	    g2.dispose();
+	    g2 = null;
+	}
+
+	@Override
+	public void paintComponent(Graphics g) {
+	    super.paintComponent(g);
+	}
+
+	void setData(Map<GyroAxes, Float> angleMap) {
+	    this.map = angleMap;
+	    repaint();
 	}
     }
 
